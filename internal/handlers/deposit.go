@@ -13,7 +13,7 @@ type DHandler struct {
 	store *db.DB
 }
 
-func DepositH(store *db.DB) *DHandler {
+func NewDepositH(store *db.DB) *DHandler {
 	return &DHandler{store: store}
 }
 
@@ -43,7 +43,7 @@ func (h *DHandler) DepositHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Amount <= 0 {
+	if req.Balance <= 0 {
 		http.Error(w, "Invalid amount parameter", http.StatusBadRequest)
 		return
 	}

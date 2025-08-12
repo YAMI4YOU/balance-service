@@ -9,7 +9,7 @@ import (
 )
 
 func (db *DB) GetBalance(ctx context.Context, userID int) (int64, error) {
-	const query = `SELECT balance FROM balance WHERE user_id = $1`
+	const query = `SELECT balance FROM wallet WHERE user_id = $1`
 
 	var balance int64
 	err := db.Conn.QueryRow(ctx, query, userID).Scan(&balance)

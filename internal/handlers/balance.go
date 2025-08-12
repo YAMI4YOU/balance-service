@@ -63,7 +63,7 @@ func writeJSON(w http.ResponseWriter, data any, status int) {
 
 	_, err = w.Write(d)
 	if err != nil {
-		log.Printf("error writing response: %v", err)
+		log.Printf("error writing response: %w", err)
 		return
 	}
 }

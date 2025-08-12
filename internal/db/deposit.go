@@ -6,8 +6,8 @@ import (
 )
 
 type DepositRequest struct {
-	UserID int   `json:"user_id"`
-	Amount int64 `json:"amount"`
+	UserID  int   `json:"user_id"`
+	Balance int64 `json:"balance"`
 }
 
 func (db *DB) Deposit(ctx context.Context, req DepositRequest) error {
@@ -18,26 +18,27 @@ func (db *DB) Deposit(ctx context.Context, req DepositRequest) error {
 	defer tx.Rollback(ctx)
 
 	var exists bool
-	err = tx.QueryRow(ctx,
-		"select exists(select 1 from balance where user_id = $1)", req.UserID).Scan(&exists)
+	err = tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM wallet WHERE user_id = $1)", req.UserID).Scan(&exists)
 	if err != nil {
-		return fmt.Errorf("couldn't check if user exists: %v", err)
+		return fmt.Errorf("couldn't check if user exists: %w", err)
 	}
+	fmt.Println("User exists:", exists)
 
+	fmt.Println(req.UserID, req.Balance)
 	if !exists {
-		_, err := tx.Exec(ctx, "INSERT INTO balance (user_id, balance) VALUES ($1, $2)", req.UserID, req.Amount)
+		_, err := tx.Exec(ctx, "INSERT INTO wallet (user_id, balance) VALUES ($1, $2)", req.UserID, req.Balance)
 		if err != nil {
-			return fmt.Errorf("couldn't insert balance: %v", err)
+			return fmt.Errorf("couldn't insert balance: %w", err)
 		}
 	} else {
-		_, err := tx.Exec(ctx, "UPDATE balance SET balance = balance + $1 WHERE user_id = $2", req.Amount, req.UserID)
+		_, err := tx.Exec(ctx, "UPDATE wallet SET balance = balance + $1 WHERE user_id = $2", req.Balance, req.UserID)
 		if err != nil {
-			return fmt.Errorf("couldn't update balance: %v", err)
+			return fmt.Errorf("couldn't update balance: %w", err)
 		}
+	}
 
-		if err := tx.Commit(ctx); err != nil {
-			return fmt.Errorf("couldn't commit transaction: %v", err)
-		}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("couldn't commit transaction: %w", err)
 	}
 
 	return nil

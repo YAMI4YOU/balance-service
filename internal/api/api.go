@@ -10,7 +10,9 @@ import (
 func Init(db *db.DB) {
 	balanceHandler := handlers.BalanceH(db)
 	depositHandler := handlers.DepositH(db)
+	reserveHandler := handlers.ReserveH(db)
 
 	http.HandleFunc("/balance", balanceHandler.BalanceHandler)
 	http.HandleFunc("/deposit", depositHandler.DepositHandler)
+	http.HandleFunc("/reserve", reserveHandler.ReserveHandler)
 }
