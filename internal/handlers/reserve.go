@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"balance-service/internal/db"
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/YAMI4YOU/balance-service/internal/db"
 )
 
 type RHandler struct {

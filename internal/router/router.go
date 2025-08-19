@@ -1,15 +1,15 @@
-package api
+package router
 
 import (
 	"net/http"
 
-	"balance-service/internal/db"
-	"balance-service/internal/handlers"
+	"github.com/YAMI4YOU/balance-service/internal/db"
+	"github.com/YAMI4YOU/balance-service/internal/handlers"
 )
 
 func Init(db *db.DB) {
 	balanceHandler := handlers.BalanceH(db)
-	depositHandler := handlers.DepositH(db)
+	depositHandler := handlers.NewDepositH(db)
 	reserveHandler := handlers.ReserveH(db)
 
 	http.HandleFunc("/balance", balanceHandler.BalanceHandler)

@@ -5,13 +5,19 @@ CREATE TABLE IF NOT EXISTS wallet (
     balance NUMERIC(15, 2) NOT NULL DEFAULT 0 CHECK(balance >= 0)
 );
 
+CREATE TYPE reservation_status AS ENUM (
+    'reserved',
+    'confirmed',
+    'cancelled'
+);
+
 CREATE TABLE IF NOT EXISTS reservation (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     service_id BIGINT NOT NULL,
     order_id BIGINT NOT NULL,
     amount NUMERIC(15, 2) NOT NULL CHECK (amount > 0),
-    status VARCHAR(20) NOT NULL DEFAULT 'reserved' CHECK (status IN ('reserved', 'confirmed', 'canceled'))
+    status reservation_status NOT NULL DEFAULT 'reserved'
 );
 
 CREATE INDEX IF NOT EXISTS idx_reservation_user_id ON reservation(user_id);

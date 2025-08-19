@@ -1,4 +1,4 @@
-module balance-service
+module github.com/YAMI4YOU/balance-service
 
 go 1.24.2
 

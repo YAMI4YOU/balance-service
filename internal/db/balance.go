@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/YAMI4YOU/balance-service/internal/models"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -15,7 +16,7 @@ func (db *DB) GetBalance(ctx context.Context, userID int) (int64, error) {
 	err := db.Conn.QueryRow(ctx, query, userID).Scan(&balance)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, fmt.Errorf("user not found")
+			return 0, models.ErrUserNotFound
 		}
 		return 0, fmt.Errorf("database query error: %w", err)
 	}

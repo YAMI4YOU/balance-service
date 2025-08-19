@@ -1,11 +1,12 @@
 package handlers
 
 import (
-	"balance-service/internal/db"
 	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/YAMI4YOU/balance-service/internal/db"
 )
 
 type BalanceResponse struct {
@@ -26,6 +27,7 @@ func (h *BHandler) BalanceHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	log.Printf("Got request for balance: %s", r.URL)
 
 	userIDStr := r.URL.Query().Get("user_id")
 	if userIDStr == "" {

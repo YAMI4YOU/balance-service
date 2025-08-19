@@ -1,12 +1,12 @@
 package main
 
 import (
-	"balance-service/internal/api"
-	"context"
 	"log"
+	"runtime/debug"
 
-	"balance-service/internal/db"
-	"balance-service/internal/server"
+	"github.com/YAMI4YOU/balance-service/internal/db"
+	"github.com/YAMI4YOU/balance-service/internal/router"
+	"github.com/YAMI4YOU/balance-service/internal/server"
 
 	"github.com/joho/godotenv"
 )
@@ -16,25 +16,17 @@ func main() {
 		log.Printf("Warning: No .env file found, using system environment variables")
 	}
 
-	conn, err := db.Init()
-	if err != nil {
-		log.Fatalf("Failed to connect to database: %s\n", err)
-	}
 	defer func() {
-		if conn.Conn != nil {
-			conn.Conn.Close(context.Background())
+		if r := recover(); r != nil {
+			log.Printf("Application initialization failed: %v", r)
+			log.Printf("Stack trace: %s", debug.Stack())
 		}
 	}()
 
-	var version string
-	err = conn.Conn.QueryRow(context.Background(), "SELECT version()").Scan(&version)
-	if err != nil {
-		log.Fatalf("Query failed: %v", err)
-	}
+	connection := db.MustInit()
+	defer connection.CloseDB()
 
-	log.Println("PostgreSQL version:", version)
-
-	api.Init(conn)
+	router.Init(connection)
 
 	server.Run()
 }
