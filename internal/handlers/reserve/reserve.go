@@ -1,28 +1,43 @@
-package handlers
+package reserve
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
-	"github.com/YAMI4YOU/balance-service/internal/db"
+	"github.com/YAMI4YOU/balance-service/internal/handlers"
+	"github.com/YAMI4YOU/balance-service/internal/models"
 )
 
-type RHandler struct {
-	store *db.DB
+type Request struct {
+	UserID    int   `json:"user_id"`
+	ServiceID int   `json:"service_id"`
+	OrderID   int   `json:"order_id"`
+	Amount    int64 `json:"amount"`
 }
 
-func ReserveH(store *db.DB) *RHandler {
-	return &RHandler{store: store}
+type repo interface {
+	ReserveFunds(ctx context.Context, req models.Reserve) error
 }
 
-func (h *RHandler) ReserveHandler(w http.ResponseWriter, r *http.Request) {
+type Handler struct {
+	store repo
+}
+
+func NewHandler(store repo) *Handler {
+	return &Handler{store: store}
+}
+
+func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	log.Printf(`Got reguest "POST" for reservation: %s`, r.URL)
 
-	var req db.Reserve
+	var req Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -45,11 +60,16 @@ func (h *RHandler) ReserveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.store.ReserveFunds(r.Context(), req); err != nil {
-		switch err.Error() {
-		case "user not found":
+	if err := h.store.ReserveFunds(r.Context(), models.Reserve{
+		UserID:    req.UserID,
+		ServiceID: req.ServiceID,
+		OrderID:   req.OrderID,
+		Amount:    req.Amount,
+	}); err != nil {
+		switch {
+		case errors.Is(err, models.ErrUserNotFound):
 			http.Error(w, "User not found", http.StatusNotFound)
-		case "insufficient funds":
+		case errors.Is(err, models.ErrInsufficientFunds):
 			http.Error(w, "Insufficient funds", http.StatusPaymentRequired)
 		default:
 			log.Printf("Reserve failed: %v", err)
@@ -58,7 +78,7 @@ func (h *RHandler) ReserveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, map[string]string{
+	handlers.WriteJSON(w, map[string]string{
 		"status":  "success",
 		"message": "Funds reserved successfully"},
 		http.StatusCreated)

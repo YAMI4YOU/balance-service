@@ -1,19 +1,30 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
 	"runtime/debug"
+	"time"
 
-	"github.com/YAMI4YOU/balance-service/internal/db"
-	"github.com/YAMI4YOU/balance-service/internal/router"
+	"github.com/YAMI4YOU/balance-service/config"
+	"github.com/YAMI4YOU/balance-service/internal/configure"
+	"github.com/YAMI4YOU/balance-service/internal/handlers/balance"
+	"github.com/YAMI4YOU/balance-service/internal/handlers/deposit"
+	"github.com/YAMI4YOU/balance-service/internal/handlers/reserve"
+	balanceRepo "github.com/YAMI4YOU/balance-service/internal/repo/balance"
+	depositRepo "github.com/YAMI4YOU/balance-service/internal/repo/deposit"
+	reserveRepo "github.com/YAMI4YOU/balance-service/internal/repo/reservation"
 	"github.com/YAMI4YOU/balance-service/internal/server"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: No .env file found, using system environment variables")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cfg, err := config.NewConfig()
+	if err != nil {
+		log.Fatal("Error loading config: ", err)
 	}
 
 	defer func() {
@@ -23,10 +34,29 @@ func main() {
 		}
 	}()
 
-	connection := db.MustInit()
-	defer connection.CloseDB()
+	connection := configure.MustInitDB(ctx, cfg.DBUrl)
+	defer func() {
+		ctxClose, cancelClose := context.WithTimeout(context.Background(), time.Second)
+		defer cancelClose()
 
-	router.Init(connection)
+		_ = connection.Close(ctxClose)
+	}()
 
-	server.Run()
+	// <-- Repo
+	repoBalance := balanceRepo.New(connection)
+	repoDeposit := depositRepo.New(connection)
+	repoReserve := reserveRepo.New(connection)
+	// Repo -->
+
+	// <-- Handle
+	balanceHandler := balance.NewHandler(repoBalance)
+	depositHandler := deposit.NewHandler(repoDeposit)
+	reserveHandler := reserve.NewHandler(repoReserve)
+	//  Handle -->
+
+	http.HandleFunc("/balance", balanceHandler.Handle)
+	http.HandleFunc("/deposit", depositHandler.Handle)
+	http.HandleFunc("/reserve", reserveHandler.Handle)
+
+	server.Run(ctx, cancel, cfg.HostPort)
 }

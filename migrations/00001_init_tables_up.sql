@@ -5,11 +5,15 @@ CREATE TABLE IF NOT EXISTS wallet (
     balance NUMERIC(15, 2) NOT NULL DEFAULT 0 CHECK(balance >= 0)
 );
 
-CREATE TYPE reservation_status AS ENUM (
-    'reserved',
-    'confirmed',
-    'cancelled'
-);
+DO $$ BEGIN
+    CREATE TYPE reservation_status AS ENUM (
+        'reserved',
+        'confirmed',
+        'cancelled'
+        );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS reservation (
     id BIGSERIAL PRIMARY KEY,

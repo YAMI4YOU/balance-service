@@ -1,27 +1,39 @@
-package handlers
+package deposit
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 
-	"github.com/YAMI4YOU/balance-service/internal/db"
+	"github.com/YAMI4YOU/balance-service/internal/handlers"
+	"github.com/YAMI4YOU/balance-service/internal/models"
 )
 
-type DHandler struct {
-	store *db.DB
+type Request struct {
+	UserID  int     `json:"user_id"`
+	Balance float64 `json:"balance"`
 }
 
-func NewDepositH(store *db.DB) *DHandler {
-	return &DHandler{store: store}
+type repo interface {
+	MakeDeposit(ctx context.Context, deposit models.Deposit) error
 }
 
-func (h *DHandler) DepositHandler(w http.ResponseWriter, r *http.Request) {
+type Handler struct {
+	store repo
+}
+
+func NewHandler(store repo) *Handler {
+	return &Handler{store: store}
+}
+
+func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
+	log.Printf(`Got reguest "POST" for deposit: %s`, r.URL)
 
 	log.Printf("Headers: %+v\n", r.Header)
 	body, err := io.ReadAll(r.Body)
@@ -33,7 +45,7 @@ func (h *DHandler) DepositHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("body: %s\n", string(body))
 	defer r.Body.Close()
 
-	var req db.DepositRequest
+	var req Request
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -49,12 +61,17 @@ func (h *DHandler) DepositHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.store.Deposit(r.Context(), req); err != nil {
+	money := models.NewMoneyFromRubles(req.Balance)
+
+	if err = h.store.MakeDeposit(r.Context(), models.Deposit{
+		UserID:  req.UserID,
+		Balance: money,
+	}); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	fmt.Printf("Parsed data: %+v\n", req)
 
-	writeJSON(w, map[string]string{"status": "success"}, http.StatusCreated)
+	handlers.WriteJSON(w, map[string]string{"status": "success"}, http.StatusCreated)
 }
