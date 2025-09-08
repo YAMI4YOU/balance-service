@@ -17,14 +17,7 @@ func New(conn *pgx.Conn) *Repo {
 	return &Repo{conn: conn}
 }
 
-type Request struct {
-	UserID    int   `json:"user_id"`
-	ServiceID int   `json:"service_id"`
-	OrderID   int   `json:"order_id"`
-	Amount    int64 `json:"amount"`
-}
-
-func (db *Repo) ReserveFunds(ctx context.Context, req models.Reserve) error {
+func (db *Repo) ReserveFunds(ctx context.Context, reserve models.Reservation) error {
 	tx, err := db.conn.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("couldn't start transaction: %w", err)
@@ -32,26 +25,80 @@ func (db *Repo) ReserveFunds(ctx context.Context, req models.Reserve) error {
 	defer tx.Rollback(ctx)
 
 	var currentBalance int64
-	err = tx.QueryRow(ctx, "SELECT balance FROM wallet WHERE user_id = $1 FOR UPDATE",
-		req.UserID).Scan(&currentBalance)
-	switch {
-	case errors.Is(err, pgx.ErrNoRows):
-		return models.ErrUserNotFound
-	case err != nil:
-		return fmt.Errorf("couldn't get current balance: %w", err)
-	case currentBalance < req.Amount:
+	err = tx.QueryRow(ctx, `
+		SELECT balance 
+		FROM wallet 
+		WHERE user_id = $1 
+		FOR UPDATE
+	`, reserve.UserID).Scan(&currentBalance)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.ErrUserNotFound
+		}
+		return fmt.Errorf("reservation select balance failed: %w", err)
+	}
+
+	if currentBalance < reserve.Amount.Kopecks() {
 		return models.ErrInsufficientFunds
 	}
 
-	_, err = tx.Exec(ctx, "UPDATE wallet SET balance = balance - $1 WHERE user_id = $2;",
-		req.Amount, req.UserID)
+	hasConflict, checkErr := db.hasReservationConflict(ctx, tx, reserve)
+
+	if checkErr != nil {
+		return checkErr
+	}
+
+	if hasConflict {
+		return models.ErrConflictReservation
+	}
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO reservation (user_id, service_id, order_id, amount, status)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (service_id, order_id) 
+		DO UPDATE SET 
+			amount = reservation.amount + EXCLUDED.amount,
+			status = $5
+	`, reserve.UserID, reserve.ServiceID, reserve.OrderID,
+		reserve.Amount.Kopecks(), models.ReservationStatusReserved)
+
 	if err != nil {
-		return fmt.Errorf("balance update failed: %w", err)
+		return fmt.Errorf("reservation creation failed: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, `
+		UPDATE wallet 
+		SET balance = balance - $1 
+		WHERE user_id = $2
+		`, reserve.Amount.Kopecks(), reserve.UserID)
+
+	if err != nil {
+		return fmt.Errorf("reservation balance update failed: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("couldn't commit transaction: %w", err)
+		return fmt.Errorf("couldn't commit reservation transaction: %w", err)
 	}
 
 	return nil
+}
+
+func (db *Repo) hasReservationConflict(ctx context.Context, tx pgx.Tx, reserve models.Reservation) (bool, error) {
+	var existingUserID int
+	err := tx.QueryRow(ctx, `
+		SELECT user_id 
+		FROM reservation 
+		WHERE service_id = $1 AND order_id = $2
+	`, reserve.ServiceID, reserve.OrderID).Scan(&existingUserID)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, fmt.Errorf("failed to check reservation conflict: %w", err)
+	}
+
+	return existingUserID != reserve.UserID, nil
 }

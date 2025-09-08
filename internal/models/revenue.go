@@ -1,8 +1,8 @@
 package models
 
-type Reserve struct {
+type Revenue struct {
 	UserID    int
 	ServiceID int
 	OrderID   int
-	Amount    int64
+	Amount    Money
 }

@@ -11,7 +11,7 @@ func NewMoneyFromKopecks(kopecks int64) Money {
 }
 
 func NewMoneyFromRubles(rubles float64) Money {
-	kopecks := int64(math.Round(rubles * 100))
+	kopecks := int64(math.Round(rubles * 100)) // разобраться с округлением
 	return Money{kopecks: kopecks}
 }
 

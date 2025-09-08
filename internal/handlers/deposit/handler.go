@@ -34,8 +34,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 	log.Printf(`Got reguest "POST" for deposit: %s`, r.URL)
-
 	log.Printf("Headers: %+v\n", r.Header)
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body: %s", err)
@@ -61,11 +61,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	money := models.NewMoneyFromRubles(req.Balance)
-
 	if err = h.store.MakeDeposit(r.Context(), models.Deposit{
 		UserID:  req.UserID,
-		Balance: money,
+		Balance: models.NewMoneyFromRubles(req.Balance),
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
