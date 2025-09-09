@@ -5,11 +5,8 @@ type MonthlyReportRequest struct {
 	Month int
 }
 
-type MonthlyReportRecord struct {
-	UserID    int64
+type ReportSummary struct {
 	ServiceID int64
-	OrderID   int64
 	Amount    Money
-	Operation string
 	CreatedAt string
 }

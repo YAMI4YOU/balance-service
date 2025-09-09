@@ -61,8 +61,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		log.Printf("failed to generate report service: %v", err)
-		http.Error(w, "failed to generate report service", http.StatusInternalServerError)
+		log.Printf("failed to generate report: %v", err)
+		http.Error(w, "failed to generate report", http.StatusInternalServerError)
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		"message": fmt.Sprintf("Report for %d-%02d generated successfully", req.Year, req.Month),
 	}
 
-	log.Printf("Successfully created reportservice for year: %d and month: %d",
+	log.Printf("Successfully created report for year: %d and month: %d",
 		req.Year, req.Month)
 
 	handlers.WriteJSON(w, response, http.StatusOK)

@@ -6,6 +6,10 @@ type Money struct {
 	kopecks int64
 }
 
+func (m Money) Add(other Money) Money {
+	return Money{kopecks: m.kopecks + other.kopecks}
+}
+
 func NewMoneyFromKopecks(kopecks int64) Money {
 	return Money{kopecks: kopecks}
 }

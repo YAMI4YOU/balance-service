@@ -17,7 +17,7 @@ func New(conn *pgx.Conn) *Repo {
 	return &Repo{conn: conn}
 }
 
-func (db *Repo) MonthlyReport(ctx context.Context, req models.MonthlyReportRequest) ([]models.MonthlyReportRecord, error) {
+func (db *Repo) MonthlyReport(ctx context.Context, req models.MonthlyReportRequest) ([]models.ReportSummary, error) {
 	if req.Year < 2000 || req.Year > 2100 {
 		return nil, fmt.Errorf("year out of range: %d", req.Year)
 	}
@@ -30,10 +30,11 @@ func (db *Repo) MonthlyReport(ctx context.Context, req models.MonthlyReportReque
 	endDate := startDate.AddDate(0, 1, 0)
 
 	query := `
-		SELECT user_id, service_id, order_id, amount, operation_type, created_at
+		SELECT service_id, SUM(amount) as total_amount
 		FROM accounting_report
 		WHERE created_at >= $1 AND created_at < $2
-		ORDER BY created_at ASC
+		GROUP BY service_id
+		ORDER BY service_id
 	`
 
 	rows, err := db.conn.Query(ctx, query, startDate, endDate)
@@ -43,31 +44,26 @@ func (db *Repo) MonthlyReport(ctx context.Context, req models.MonthlyReportReque
 
 	defer rows.Close()
 
-	var records []models.MonthlyReportRecord
+	var summaries []models.ReportSummary
 	for rows.Next() {
-		var record models.MonthlyReportRecord
+		var summary models.ReportSummary
 		var amount int64
-		var createdAt time.Time
 
 		err := rows.Scan(
-			&record.UserID,
-			&record.ServiceID,
-			&record.OrderID,
+			&summary.ServiceID,
 			&amount,
-			&record.Operation,
-			&createdAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan reportservice record: %w", err)
 		}
 
-		record.Amount = models.NewMoneyFromKopecks(amount)
-		record.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
-		records = append(records, record)
+		summary.Amount = models.NewMoneyFromKopecks(amount)
+		summary.CreatedAt = fmt.Sprintf("%d-%02d", req.Year, req.Month)
+		summaries = append(summaries, summary)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("failed to scan reportservice records: %w", err)
 	}
-	return records, nil
+	return summaries, nil
 }
