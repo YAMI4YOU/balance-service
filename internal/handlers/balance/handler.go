@@ -10,7 +10,7 @@ import (
 	"github.com/YAMI4YOU/balance-service/internal/models"
 )
 
-type Response struct {
+type response struct {
 	UserID  int     `json:"user_id"`
 	Balance float64 `json:"balance"`
 }
@@ -57,7 +57,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlers.WriteJSON(w,
-		Response{
+		response{
 			UserID:  userID,
 			Balance: balance.Rubles()},
 		http.StatusOK)

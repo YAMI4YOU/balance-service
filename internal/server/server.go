@@ -5,44 +5,34 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
-func Run(ctx context.Context, cancel context.CancelFunc, hostPort string) {
+type Server struct {
+	server *http.Server
+}
+
+func NewServer(hostPort string) *Server {
 	addr := ":" + hostPort
-	sigs := make(chan os.Signal, 1)
-
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	srv := &http.Server{
-		Addr: addr,
-	}
-	go func() {
-		fmt.Println("Listening on " + addr)
-		if err := srv.ListenAndServe(); err != nil {
-			log.Fatalf("Failed to start server: %s\n", err)
-		}
-	}()
-
-	sig := <-sigs
-	cancel()
-
-	if err := gracefulShutdown(srv, sig); err != nil {
-		log.Fatalf("Failed to gracefully shutdown server: %s\n", err)
+	return &Server{
+		server: &http.Server{
+			Addr: addr,
+		},
 	}
 }
 
-func gracefulShutdown(srv *http.Server, sig os.Signal) error {
-	log.Printf("Received %s signal. Shutting down server...", sig)
-	ctx, shutdown := context.WithTimeout(context.Background(), 10*time.Second)
-	defer shutdown()
+func (s *Server) Start() {
+	go func() {
+		fmt.Printf("Starting server at %s\n", s.server.Addr)
+		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Error starting server: %s\n", err)
+		}
+	}()
+}
 
-	err := srv.Shutdown(ctx)
-	if err != nil {
-		return fmt.Errorf("could not gracefully shutdown server: %w", err)
-	}
-	return nil
+func (s *Server) Stop(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
+}
+
+func (s *Server) Addr() string {
+	return s.server.Addr
 }

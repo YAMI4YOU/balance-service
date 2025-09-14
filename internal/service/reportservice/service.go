@@ -12,15 +12,15 @@ import (
 	"github.com/YAMI4YOU/balance-service/internal/models"
 )
 
-type Repository interface {
+type repository interface {
 	MonthlyReport(ctx context.Context, req models.MonthlyReportRequest) ([]models.ReportSummary, error)
 }
 
 type Service struct {
-	repo Repository
+	repo repository
 }
 
-func NewService(repo Repository) *Service {
+func NewService(repo repository) *Service {
 	return &Service{repo: repo}
 }
 
@@ -40,7 +40,7 @@ func (s *Service) GenerateMonthlyReport(ctx context.Context, req models.MonthlyR
 
 	file, err := os.Create(pathOfFile)
 	if err != nil {
-		return "", fmt.Errorf("create reportservice file error: %w", err)
+		return "", fmt.Errorf("create report service file error: %w", err)
 	}
 	defer file.Close()
 

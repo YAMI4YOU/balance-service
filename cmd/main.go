@@ -4,7 +4,9 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os/signal"
 	"runtime/debug"
+	"syscall"
 	"time"
 
 	"github.com/YAMI4YOU/balance-service/config"
@@ -24,8 +26,8 @@ import (
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
 	cfg, err := config.NewConfig()
 	if err != nil {
@@ -75,5 +77,24 @@ func main() {
 	http.HandleFunc("/report", reportHandler.Handle)
 	// Route -->
 
-	server.Run(ctx, cancel, cfg.HostPort)
+	srv := server.NewServer(cfg.HostPort)
+	srv.Start()
+
+	gracefulShutdown(ctx, srv)
+}
+
+func gracefulShutdown(ctx context.Context, srv *server.Server) {
+	<-ctx.Done()
+	log.Println("Received shutdown signal, initiating graceful shutdown...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	if err := srv.Stop(shutdownCtx); err != nil {
+		log.Println("Server shutdown error:", err)
+	} else {
+		log.Println("Server gracefully shutdown")
+	}
+
+	log.Println("Application stopped")
 }

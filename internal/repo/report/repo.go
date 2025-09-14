@@ -5,8 +5,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/YAMI4YOU/balance-service/internal/models"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/YAMI4YOU/balance-service/internal/models"
+)
+
+const (
+	startYear = 2000
+	endYear   = 2100
+
+	firstMonth = 1
+	lastMonth  = 12
 )
 
 type Repo struct {
@@ -18,11 +27,11 @@ func New(conn *pgx.Conn) *Repo {
 }
 
 func (db *Repo) MonthlyReport(ctx context.Context, req models.MonthlyReportRequest) ([]models.ReportSummary, error) {
-	if req.Year < 2000 || req.Year > 2100 {
+	if req.Year < startYear || req.Year > endYear {
 		return nil, fmt.Errorf("year out of range: %d", req.Year)
 	}
 
-	if req.Month < 1 || req.Month > 12 {
+	if req.Month < firstMonth || req.Month > lastMonth {
 		return nil, fmt.Errorf("month out of range: %d", req.Month)
 	}
 
@@ -39,7 +48,7 @@ func (db *Repo) MonthlyReport(ctx context.Context, req models.MonthlyReportReque
 
 	rows, err := db.conn.Query(ctx, query, startDate, endDate)
 	if err != nil {
-		return nil, fmt.Errorf("select accounting reportservice failed: %w", err)
+		return nil, fmt.Errorf("select accounting report service failed: %w", err)
 	}
 
 	defer rows.Close()

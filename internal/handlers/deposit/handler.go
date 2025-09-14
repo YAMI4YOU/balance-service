@@ -12,7 +12,7 @@ import (
 	"github.com/YAMI4YOU/balance-service/internal/models"
 )
 
-type Request struct {
+type request struct {
 	UserID  int     `json:"user_id"`
 	Balance float64 `json:"balance"`
 }
@@ -45,7 +45,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("body: %s\n", string(body))
 	defer r.Body.Close()
 
-	var req Request
+	var req request
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

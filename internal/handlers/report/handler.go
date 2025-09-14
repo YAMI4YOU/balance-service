@@ -1,38 +1,25 @@
 package report
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/YAMI4YOU/balance-service/internal/handlers"
 	"github.com/YAMI4YOU/balance-service/internal/models"
-	"github.com/YAMI4YOU/balance-service/internal/service/reportservice"
 )
 
-type request struct {
-	Year  int `json:"year"`
-	Month int `json:"month"`
-}
-
-func (req *request) Validate() error {
-	if req.Year < 2000 || req.Year > 2100 {
-		return errors.New("year out of range")
-	}
-	if req.Month < 1 || req.Month > 12 {
-		return errors.New("month out of range")
-	}
-
-	return nil
+type service interface {
+	GenerateMonthlyReport(ctx context.Context, req models.MonthlyReportRequest) (string, error)
 }
 
 type Handler struct {
-	service *reportservice.Service
+	service service
 }
 
-func NewHandler(s *reportservice.Service) *Handler {
+func NewHandler(s service) *Handler {
 	return &Handler{service: s}
 }
 
