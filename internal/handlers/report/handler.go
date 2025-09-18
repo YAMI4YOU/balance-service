@@ -12,7 +12,7 @@ import (
 )
 
 type service interface {
-	GenerateMonthlyReport(ctx context.Context, req models.MonthlyReportRequest) (string, error)
+	GenerateMonthlyReport(ctx context.Context, req models.Report) (string, error)
 }
 
 type Handler struct {
@@ -42,7 +42,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filepath, err := h.service.GenerateMonthlyReport(r.Context(), models.MonthlyReportRequest{
+	filepath, err := h.service.GenerateMonthlyReport(r.Context(), models.Report{
 		Year:  req.Year,
 		Month: req.Month,
 	})

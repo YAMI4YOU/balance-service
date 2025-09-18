@@ -1,6 +1,6 @@
 package models
 
-type MonthlyReportRequest struct {
+type Report struct {
 	Year  int
 	Month int
 }

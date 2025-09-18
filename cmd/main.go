@@ -78,7 +78,7 @@ func main() {
 	// Route -->
 
 	srv := server.NewServer(cfg.HostPort)
-	srv.Start()
+	go srv.Start()
 
 	gracefulShutdown(ctx, srv)
 }

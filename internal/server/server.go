@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -21,12 +22,12 @@ func NewServer(hostPort string) *Server {
 }
 
 func (s *Server) Start() {
-	go func() {
-		fmt.Printf("Starting server at %s\n", s.server.Addr)
-		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Error starting server: %s\n", err)
-		}
-	}()
+
+	fmt.Printf("Starting server at %s\n", s.server.Addr)
+	if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalf("Error starting server: %s\n", err)
+	}
+
 }
 
 func (s *Server) Stop(ctx context.Context) error {

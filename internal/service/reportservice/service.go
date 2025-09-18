@@ -13,7 +13,7 @@ import (
 )
 
 type repository interface {
-	MonthlyReport(ctx context.Context, req models.MonthlyReportRequest) ([]models.ReportSummary, error)
+	MonthlyReport(ctx context.Context, req models.Report) ([]models.ReportSummary, error)
 }
 
 type Service struct {
@@ -24,7 +24,7 @@ func NewService(repo repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) GenerateMonthlyReport(ctx context.Context, req models.MonthlyReportRequest) (string, error) {
+func (s *Service) GenerateMonthlyReport(ctx context.Context, req models.Report) (string, error) {
 	summaries, err := s.repo.MonthlyReport(ctx, req)
 	if err != nil {
 		return "", fmt.Errorf("generate monthly report error: %w", err)

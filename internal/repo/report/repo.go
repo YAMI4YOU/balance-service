@@ -10,14 +10,6 @@ import (
 	"github.com/YAMI4YOU/balance-service/internal/models"
 )
 
-const (
-	startYear = 2000
-	endYear   = 2100
-
-	firstMonth = 1
-	lastMonth  = 12
-)
-
 type Repo struct {
 	conn *pgx.Conn
 }
@@ -26,16 +18,8 @@ func New(conn *pgx.Conn) *Repo {
 	return &Repo{conn: conn}
 }
 
-func (db *Repo) MonthlyReport(ctx context.Context, req models.MonthlyReportRequest) ([]models.ReportSummary, error) {
-	if req.Year < startYear || req.Year > endYear {
-		return nil, fmt.Errorf("year out of range: %d", req.Year)
-	}
-
-	if req.Month < firstMonth || req.Month > lastMonth {
-		return nil, fmt.Errorf("month out of range: %d", req.Month)
-	}
-
-	startDate := time.Date(req.Year, time.Month(req.Month), 1, 0, 0, 0, 0, time.UTC)
+func (db *Repo) MonthlyReport(ctx context.Context, model models.Report) ([]models.ReportSummary, error) {
+	startDate := time.Date(model.Year, time.Month(model.Month), 1, 0, 0, 0, 0, time.UTC)
 	endDate := startDate.AddDate(0, 1, 0)
 
 	query := `
@@ -67,7 +51,7 @@ func (db *Repo) MonthlyReport(ctx context.Context, req models.MonthlyReportReque
 		}
 
 		summary.Amount = models.NewMoneyFromKopecks(amount)
-		summary.CreatedAt = fmt.Sprintf("%d-%02d", req.Year, req.Month)
+		summary.CreatedAt = fmt.Sprintf("%d-%02d", model.Year, model.Month)
 		summaries = append(summaries, summary)
 	}
 
