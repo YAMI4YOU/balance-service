@@ -18,7 +18,7 @@ func New(conn *pgx.Conn) *Repo {
 	return &Repo{conn: conn}
 }
 
-func (db *Repo) MonthlyReport(ctx context.Context, model models.Report) ([]models.ReportSummary, error) {
+func (db *Repo) FetchReport(ctx context.Context, model models.Report) ([]models.ReportSummary, error) {
 	startDate := time.Date(model.Year, time.Month(model.Month), 1, 0, 0, 0, 0, time.UTC)
 	endDate := startDate.AddDate(0, 1, 0)
 
@@ -47,16 +47,15 @@ func (db *Repo) MonthlyReport(ctx context.Context, model models.Report) ([]model
 			&amount,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan reportservice record: %w", err)
+			return nil, fmt.Errorf("failed to scan report record: %w", err)
 		}
 
 		summary.Amount = models.NewMoneyFromKopecks(amount)
-		summary.CreatedAt = fmt.Sprintf("%d-%02d", model.Year, model.Month)
 		summaries = append(summaries, summary)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to scan reportservice records: %w", err)
+		return nil, fmt.Errorf("failed to scan report records: %w", err)
 	}
 	return summaries, nil
 }

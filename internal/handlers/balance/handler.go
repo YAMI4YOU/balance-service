@@ -1,7 +1,7 @@
 package balance
 
 import (
-	"context"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -15,16 +15,12 @@ type response struct {
 	Balance float64 `json:"balance"`
 }
 
-type repo interface {
-	FetchBalance(ctx context.Context, userID int) (models.Money, error)
-}
-
 type Handler struct {
-	store repo
+	Store repo
 }
 
 func NewHandler(store repo) *Handler {
-	return &Handler{store: store}
+	return &Handler{Store: store}
 }
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
@@ -46,9 +42,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	balance, err := h.store.FetchBalance(r.Context(), userID)
+	balance, err := h.Store.FetchBalance(r.Context(), userID)
 	if err != nil {
-		if err.Error() == "user not found" {
+		if errors.Is(err, models.ErrUserNotFound) {
 			http.Error(w, "User not found", http.StatusNotFound)
 			return
 		}

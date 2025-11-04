@@ -1,5 +1,4 @@
 .env
-.env*
 *.txt
 .idea
 Makefile

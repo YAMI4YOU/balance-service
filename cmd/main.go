@@ -22,7 +22,8 @@ import (
 	reserveRepo "github.com/YAMI4YOU/balance-service/internal/repo/reservation"
 	revenueRepo "github.com/YAMI4YOU/balance-service/internal/repo/revenue"
 	"github.com/YAMI4YOU/balance-service/internal/server"
-	"github.com/YAMI4YOU/balance-service/internal/service/reportservice"
+	"github.com/YAMI4YOU/balance-service/internal/service/file"
+	reportService "github.com/YAMI4YOU/balance-service/internal/service/report"
 )
 
 func main() {
@@ -58,7 +59,8 @@ func main() {
 	// Repo -->
 
 	// <-- Service
-	reportService := reportservice.NewService(repoReport)
+	fileWriter := file.NewWriter()
+	serviceReport := reportService.NewService(repoReport, fileWriter)
 	// Service -->
 
 	// <-- Handle
@@ -66,7 +68,7 @@ func main() {
 	depositHandler := deposit.NewHandler(repoDeposit)
 	reserveHandler := reservation.NewHandler(repoReserve)
 	revenueHandler := revenue.NewHandler(repoRevenue)
-	reportHandler := report.NewHandler(reportService)
+	reportHandler := report.NewHandler(serviceReport)
 	//  Handle -->
 
 	// <-- Route

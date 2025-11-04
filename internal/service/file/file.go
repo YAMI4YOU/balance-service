@@ -1,7 +1,6 @@
-package reportservice
+package file
 
 import (
-	"context"
 	"encoding/csv"
 	"fmt"
 	"os"
@@ -12,26 +11,15 @@ import (
 	"github.com/YAMI4YOU/balance-service/internal/models"
 )
 
-type repository interface {
-	MonthlyReport(ctx context.Context, req models.Report) ([]models.ReportSummary, error)
+type Writer struct {
 }
 
-type Service struct {
-	repo repository
+func NewWriter() *Writer {
+	return &Writer{}
 }
 
-func NewService(repo repository) *Service {
-	return &Service{repo: repo}
-}
-
-func (s *Service) GenerateMonthlyReport(ctx context.Context, req models.Report) (string, error) {
-	summaries, err := s.repo.MonthlyReport(ctx, req)
-	if err != nil {
-		return "", fmt.Errorf("generate monthly report error: %w", err)
-	}
-
-	filename := fmt.Sprintf("report_%d_%02d_%s.csv", req.Year, req.Month,
-		time.Now().Format("20060102_150405"))
+func (f *Writer) Save(model models.Report, summaries []models.ReportSummary) (string, error) {
+	filename := fmt.Sprintf("report_%d_%02d_%s.csv", model.Year, model.Month, time.Now().Format("20060102_150405"))
 	pathOfFile := filepath.Join("reports", filename)
 
 	if err := os.MkdirAll("reports", 0777); err != nil {
@@ -63,5 +51,5 @@ func (s *Service) GenerateMonthlyReport(ctx context.Context, req models.Report) 
 		}
 	}
 
-	return filename, nil
+	return filename, err
 }

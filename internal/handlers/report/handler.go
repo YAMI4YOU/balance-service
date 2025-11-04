@@ -1,7 +1,6 @@
 package report
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,10 +9,6 @@ import (
 	"github.com/YAMI4YOU/balance-service/internal/handlers"
 	"github.com/YAMI4YOU/balance-service/internal/models"
 )
-
-type service interface {
-	GenerateMonthlyReport(ctx context.Context, req models.Report) (string, error)
-}
 
 type Handler struct {
 	service service
@@ -42,7 +37,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filepath, err := h.service.GenerateMonthlyReport(r.Context(), models.Report{
+	filepath, err := h.service.GenerateReport(r.Context(), models.Report{
 		Year:  req.Year,
 		Month: req.Month,
 	})

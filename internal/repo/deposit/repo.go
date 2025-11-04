@@ -17,7 +17,7 @@ func New(conn *pgx.Conn) *Repo {
 	return &Repo{conn: conn}
 }
 
-func (db *Repo) MakeDeposit(ctx context.Context, deposit models.Deposit) error {
+func (db *Repo) MakeDeposit(ctx context.Context, model models.Deposit) error {
 	tx, err := db.conn.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("couldn't start a transaction: %w", err)
@@ -29,7 +29,7 @@ func (db *Repo) MakeDeposit(ctx context.Context, deposit models.Deposit) error {
     VALUES ($1, $2)
     ON CONFLICT (user_id) 
     DO UPDATE SET balance = wallet.balance + EXCLUDED.balance
-`, deposit.UserID, deposit.Balance.Kopecks())
+`, model.UserID, model.Balance.Kopecks())
 
 	if err != nil {
 		return fmt.Errorf("upsert wallet balance: %w", err)

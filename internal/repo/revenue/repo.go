@@ -78,7 +78,7 @@ func (db *Repo) RecognizeRevenue(ctx context.Context, revenue models.Revenue) er
 	`, revenue.UserID, revenue.ServiceID, revenue.OrderID, revenue.Amount.Kopecks(), "revenue_recognition")
 
 	if err != nil {
-		return fmt.Errorf("create accounting reportservice failed: %w", err)
+		return fmt.Errorf("create accounting report failed: %w", err)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("recognize revenue transaction commit: %w", err)

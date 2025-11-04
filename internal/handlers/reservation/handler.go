@@ -1,19 +1,15 @@
 package reservation
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 
 	"github.com/YAMI4YOU/balance-service/internal/handlers"
+	"github.com/YAMI4YOU/balance-service/internal/handlers/request"
 	"github.com/YAMI4YOU/balance-service/internal/models"
 )
-
-type repo interface {
-	ReserveFunds(ctx context.Context, req models.Reservation) error
-}
 
 type Handler struct {
 	store repo
@@ -30,7 +26,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf(`Got reguest "POST" for reservation: %s`, r.URL)
 
-	var req request
+	var req request.ReservationAndRevenueRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

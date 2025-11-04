@@ -1,7 +1,6 @@
 package deposit
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,10 +14,6 @@ import (
 type request struct {
 	UserID  int     `json:"user_id"`
 	Balance float64 `json:"balance"`
-}
-
-type repo interface {
-	MakeDeposit(ctx context.Context, deposit models.Deposit) error
 }
 
 type Handler struct {

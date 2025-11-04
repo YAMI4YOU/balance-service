@@ -17,7 +17,7 @@ func New(conn *pgx.Conn) *Repo {
 	return &Repo{conn: conn}
 }
 
-func (db *Repo) ReserveFunds(ctx context.Context, reserve models.Reservation) error {
+func (db *Repo) ReserveFunds(ctx context.Context, model models.Reservation) error {
 	tx, err := db.conn.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("couldn't start transaction: %w", err)
@@ -30,7 +30,7 @@ func (db *Repo) ReserveFunds(ctx context.Context, reserve models.Reservation) er
 		FROM wallet 
 		WHERE user_id = $1 
 		FOR UPDATE
-	`, reserve.UserID).Scan(&currentBalance)
+	`, model.UserID).Scan(&currentBalance)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -39,11 +39,11 @@ func (db *Repo) ReserveFunds(ctx context.Context, reserve models.Reservation) er
 		return fmt.Errorf("reservation select balance failed: %w", err)
 	}
 
-	if currentBalance < reserve.Amount.Kopecks() {
+	if currentBalance < model.Amount.Kopecks() {
 		return models.ErrInsufficientFunds
 	}
 
-	hasConflict, checkErr := db.hasReservationConflict(ctx, tx, reserve)
+	hasConflict, checkErr := db.hasReservationConflict(ctx, tx, model)
 
 	if checkErr != nil {
 		return checkErr
@@ -60,8 +60,8 @@ func (db *Repo) ReserveFunds(ctx context.Context, reserve models.Reservation) er
 		DO UPDATE SET 
 			amount = reservation.amount + EXCLUDED.amount,
 			status = $5
-	`, reserve.UserID, reserve.ServiceID, reserve.OrderID,
-		reserve.Amount.Kopecks(), models.ReservationStatusReserved)
+	`, model.UserID, model.ServiceID, model.OrderID,
+		model.Amount.Kopecks(), models.ReservationStatusReserved)
 
 	if err != nil {
 		return fmt.Errorf("reservation creation failed: %w", err)
@@ -71,7 +71,7 @@ func (db *Repo) ReserveFunds(ctx context.Context, reserve models.Reservation) er
 		UPDATE wallet 
 		SET balance = balance - $1 
 		WHERE user_id = $2
-		`, reserve.Amount.Kopecks(), reserve.UserID)
+		`, model.Amount.Kopecks(), model.UserID)
 
 	if err != nil {
 		return fmt.Errorf("reservation balance update failed: %w", err)

@@ -8,5 +8,4 @@ type Report struct {
 type ReportSummary struct {
 	ServiceID int64
 	Amount    Money
-	CreatedAt string
 }
